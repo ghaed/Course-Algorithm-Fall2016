@@ -74,11 +74,18 @@ class Graph(object):
                 head = line_int[0]
                 tail = line_int[1]
                 self.edges[edge_index] = (head, tail)
-                if head > node_index:
-                    for node_id in range(node_index+1, head+1):
-                        self.nodes[node_id] = Node()
-                    node_index = head
-                self.nodes[node_index].add_edge(tail)
+                # assert head >= node_index
+                # if head > node_index:
+                #     for node_id in range(node_index+1, head+1):
+                #         self.nodes[node_id] = Node()
+                #     node_index = head
+                if not head in self.nodes:
+                    self.nodes[head] = Node()
+                    node_index += 1
+                if not tail in self.nodes:
+                    self.nodes[tail] = Node()
+                    node_index += 1
+                self.nodes[head].add_edge(tail)
             self.node_count = node_index
             edge_index += 1
             if edge_index % 100000 == 0:
@@ -187,7 +194,6 @@ class SccGraph(Graph):
             if self.treat_as_reversed:
                 self.fi_to_nodeid[f_i] = node_id
 
-
     def dfs_group(self):
         """ Runs dfs-loop on current graph"""
         for f_i in range(self.node_count, 0, -1):
@@ -212,7 +218,7 @@ class SccGraph(Graph):
 
     def compute_scc_sizes(self):
         """ Updates self.scc_sizes[leader] by traversing through the graph."""
-        for node_id in range(1, self.node_count +1):
+        for node_id in range(1, self.node_count + 1):
             leader = self.nodes[node_id].leader
             if leader in self.scc_sizes:
                 self.scc_sizes[leader] += 1
@@ -231,14 +237,18 @@ class SccGraph(Graph):
             values[index] = 0
 
 
-large_dataset = True
+large_dataset = False
 g_base = SccGraph()
 g = g_base.clone()
 if large_dataset:
     g.read_graph_from_file('scc.txt', mode='edges')
 else:
-    g.read_graph_from_file('test_case_71000.txt', mode='edges')
+    g.read_graph_from_file('test_case_33200.txt', mode='edges')
 print 'Base Graph:'
+print 'len(g.nodes.keys)', len(g.nodes.keys())
+print 'max(g.nodes.keys)', max(g.nodes.keys())
+
+
 if not large_dataset:
     g.print_graph()
 g.dfs_group()
