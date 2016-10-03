@@ -1,5 +1,4 @@
 # Stores the graph
-import random
 
 
 class Node:
@@ -8,11 +7,18 @@ class Node:
     def __init__(self):
         """ Constructor to initialize an empty node"""
         self.edges = []        # The list of node names connected to this node object
-        self.contracted_nodes = []     # List of other node names that are already merged with this node
+        self.is_explored = False        # Flag to determine if it is already explored
+        self.lead = None                # Node_id of the lead node in an scc algorithm
+        self.f_i = 0
+        self.edges_reverse = []
 
-    def add_edge(self, target_node):
+    def add_edge(self, tail_node):
         """ Defines a new edge (arc) connecting the current node to a new one"""
-        self.edges.append(target_node)
+        self.edges.append(tail_node)
+
+    def add_edge_reverse(self, head_node):
+        """ Defines a new edge (arc) connecting the current node to a new one"""
+        self.edges_reverse.append(head_node)
 
     def disconnect_from_node(self, node_id):
         """ Deletes all edges from current object to given node"""
@@ -32,6 +38,10 @@ class Graph(object):
     def __init__(self):
         """ Constructor to initialize an empty graph. Must add nodes later """
         self.nodes = {}         # Each node number will be its hash
+        self.edges = []
+        self.directional = True
+        self.node_count = 0
+        self.edge_count = 0
 
     def add_node(self, node_id, node_obj=None):
         """ Adds a new isolated node to graph.
@@ -41,22 +51,52 @@ class Graph(object):
         else:
             self.nodes[node_id] = node_obj
 
-    def read_graph_from_file(self, file_name):
-        """ Reads a graph from a file. Each row starts with a node name followed by all of its target nodes"""
+    def read_graph_from_file(self, file_name, mode='edges'):
+        """ Reads a graph from a file. Each row starts with a node name followed by all of its target nodes
+        For directional graph, assumes increasing order of indexes"""
         f = open(file_name)
         lines = f.readlines()
+        node_index = 0
+        edge_index = 0
+        self.edge_count = len(lines)
+        self.edges = [None]*self.edge_count
+        print 'initializing vertices'
         for line in lines:
             line = line.rstrip()
             line_int = [int(k) for k in line.split()]
-            node_id = line_int[0]
-            self.add_node(node_id)
-            for edge in line_int[1:]:
-                self.nodes[node_id].add_edge(edge)
+            if mode == 'nodes':
+                node_id = line_int[0]
+                self.add_node(node_id)
+                for edge in line_int[1:]:
+                    self.nodes[node_id].add_edge(edge)
+            elif mode == 'edges':
+                head = line_int[0]
+                tail = line_int[1]
+                self.edges[edge_index] = (head, tail)
+                if head > node_index:
+                    node_index += 1
+                    self.nodes[node_index] = Node()
+                self.nodes[node_index].add_edge(tail)
+            self.node_count = node_index
+            edge_index += 1
+            if edge_index % 100000 == 0:
+                print 'reading line', edge_index, '/', len(lines)
+        print 'updating reverse edges'
+        self._update_reverse_edges()
+
+    def _update_reverse_edges(self):
+        """ Updates the reverse edges"""
+        print self.edges
+        for (head, tail) in self.edges:
+            self.nodes[tail].add_edge_reverse(head)
 
     def print_graph(self):
         """ Prints a graph"""
         for node_id in self.nodes.keys():
-            print node_id, ":", self.nodes[node_id].edges
+            print node_id, ':', self.nodes[node_id].edges, \
+                ' Explored:', self.nodes[node_id].is_explored, \
+                ' Lead:', self.nodes[node_id].lead, \
+                ' Reversed Edges: ', self.nodes[node_id].edges_reverse
 
     def is_edge(self, node_id_a, node_id_b):
         """ Checks if there is an edge between two node names"""
@@ -77,7 +117,8 @@ class Graph(object):
     def add_edge(self, node_id_a, node_id_b):
         """ Adds an edge between two nodes"""
         self.nodes[node_id_a].add_edge(node_id_b)
-        self.nodes[node_id_b].add_edge(node_id_a)
+        if not self.directional:
+            self.nodes[node_id_b].add_edge(node_id_a)
 
     def get_edges(self):
         """Return a list of tuples corresponding to the edges"""
@@ -97,60 +138,72 @@ class Graph(object):
         return len(self.nodes.keys())
 
 
-class CutGraph(Graph):
-    """ Methods for cutting graphs are implemented here. Sub-class of Graph"""
+class SccGraph(Graph):
+    """ Methods for computing strongly-connected components in directional
+     graphs are implemented here. Sub-class of Graph"""
 
     def __init__(self):
         """ Constructor """
-        super(CutGraph, self).__init__()
+        super(SccGraph, self).__init__()
+        self.t = 0
+        self.s = None
+        self.treat_as_reversed = False
 
     def clone(self):
         """ Clones a graph object"""
-        cut_graph = CutGraph()
+        new_graph = SccGraph()
         for node_id in self.nodes.keys():
             node = self.nodes[node_id].clone()
-            cut_graph.add_node(node_id, node)
-        return cut_graph
+            new_graph.add_node(node_id, node)
+        return new_graph
 
-    def contract_random(self):
-        """ Contracts the current graph. Picks the first edge of the first node for now"""
-        (node_id_remove, node_id_merge) = self.pick_random_edge()
-        # node_id_remove = self.nodes.keys()[0]   # ID of the node to remove
-        # j = 0   # Index of the edge in corresponding node to remove
-        # node_id_merge = self.nodes[node_id_remove].edges[j]
-        for edge in self.nodes[node_id_remove].edges:
-            if edge == node_id_merge:     # delete the loops
-                continue
-            self.add_edge(node_id_merge, edge)
-        self.remove(node_id_remove)
+    def dfs(self, node_id):
+        """ Runs dfs on current graph """
+        self.nodes[node_id].is_explored = True
+        self.nodes[node_id].lead = self.s
+        if not self.treat_as_reversed:
+            edge_pool = self.nodes[node_id].edges
+        else:
+            edge_pool = self.nodes[node_id].edges_reverse
+        for edge in edge_pool:
+            if not self.nodes[edge].is_explored:
+                self.dfs(edge)
+        self.t += 1
+        self.nodes[node_id].f_i = self.t
 
-    def pick_random_edge(self):
-        """Returns a random edge in the form of a tuple"""
-        return random.choice(self.get_edges())
+    def dfs_group(self):
+        """ Runs dfs-loop on current graph"""
+        for node_id in range(self.node_count, 0, -1):
+            if not self.nodes[node_id].is_explored:
+                self.s = node_id
+                self.dfs(node_id)
 
-g_base = CutGraph()
-g_base.read_graph_from_file('kargerMinCut.txt')
+
+g = SccGraph()
+g.read_graph_from_file('test_case_small.txt', mode='edges')
+# g.read_graph_from_file('scc.txt', mode='edges')
 print 'Base Graph:'
-g_base.print_graph()
-min_cut = g_base.get_edge_count()
-for j in range(1000):
-    g = g_base.clone()
-    for i in range(g.get_node_count()-2):
-        g.contract_random()
-    if g.get_edge_count() < min_cut:
-        min_cut = g.get_edge_count()
-    print 'trial #', j, ', cut count:', g.get_edge_count()
+g.print_graph()
+g.treat_as_reversed = True
+g.dfs_group()
+print 'after first round of group-dfs'
+g.print_graph()
+g.treat_as_reversed = False
+g.dfs_group()
+print 'after second round of group-dfs'
+g.print_graph()
 
-print 'min cut:', min_cut
 """
-1 2 3 4 7
-2 1 3 4
-3 1 2 4
-4 1 2 3 5
-5 4 6 7 8
-6 5 7 8
-7 1 5 6 8
-8 5 6 7
-expected result: 2
-cuts are [(1,7), (4,5)]
+1 4
+2 8
+3 6
+4 7
+5 2
+6 9
+7 1
+8 5
+8 6
+9 7
+9 3
+Answer: 3,3,3,0,0
 """
