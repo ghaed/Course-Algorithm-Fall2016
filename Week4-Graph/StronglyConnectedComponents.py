@@ -52,19 +52,23 @@ class Graph(object):
         else:
             self.nodes[node_id] = node_obj
 
-    def read_graph_from_file(self, file_name, mode='edges'):
+    def read_graph_from_file(self, file_name, mode='edges', node_id_cap=None):
         """ Reads a graph from a file. Each row starts with a node name followed by all of its target nodes
         For directional graph, assumes increasing order of indexes"""
         f = open(file_name)
         lines = f.readlines()
         node_index = 0
         edge_index = 0
+        line_index = 0
         self.edge_count = len(lines)
-        self.edges = [None] * self.edge_count
+        self.edges = []
         print 'initializing graph'
         for line in lines:
             line = line.rstrip()
             line_int = [int(k) for k in line.split()]
+            line_index += 1
+            if line_index % 100000 == 0:
+                print 'reading line', line_index, '/', len(lines), ' node_count:', node_index
             if mode == 'nodes':
                 node_id = line_int[0]
                 self.add_node(node_id)
@@ -73,12 +77,10 @@ class Graph(object):
             elif mode == 'edges':
                 head = line_int[0]
                 tail = line_int[1]
-                self.edges[edge_index] = (head, tail)
-                # assert head >= node_index
-                # if head > node_index:
-                #     for node_id in range(node_index+1, head+1):
-                #         self.nodes[node_id] = Node()
-                #     node_index = head
+                if node_id_cap and (head > node_id_cap or tail > node_id_cap):
+                    continue
+                self.edges.append((head, tail))
+                edge_index += 1
                 if not head in self.nodes:
                     self.nodes[head] = Node()
                     node_index += 1
@@ -87,9 +89,8 @@ class Graph(object):
                     node_index += 1
                 self.nodes[head].add_edge(tail)
             self.node_count = node_index
-            edge_index += 1
-            if edge_index % 100000 == 0:
-                print 'reading line', edge_index, '/', len(lines)
+            self.edge_count = edge_index
+
         print 'updating reverse edges'
         self._update_reverse_edges()
 
@@ -197,6 +198,12 @@ class SccGraph(Graph):
     def dfs_group(self):
         """ Runs dfs-loop on current graph"""
         for f_i in range(self.node_count, 0, -1):
+            if f_i % 100000 == 0:
+                if self.treat_as_reversed:
+                    round = 1
+                else:
+                    round = 2
+                print 'round:', round, ' processing node #', self.node_count - f_i, '/', self.node_count
             # If we are doing the first round of dfs_group on reversed graph to calculate times
             if self.treat_as_reversed:
                 node_id = f_i
@@ -227,6 +234,7 @@ class SccGraph(Graph):
 
     def print_scc_sizes(self, count=2):
         """ Prints count number of largest scc's with their leaders """
+        display_count = 0
         values = list(self.scc_sizes.values())
         keys = list(self.scc_sizes.keys())
         for rank in range(count):
@@ -234,16 +242,27 @@ class SccGraph(Graph):
             index = values.index(max_val)
             max_key = keys[index]
             print 'rank:', rank, '-> leader: ', max_key, ' size:', max_val
+            display_count += max_val
             values[index] = 0
+        print 'total nodes diplayed: ', display_count
+
+    def set_fi_to_default(self):
+        """ Sets up an arbitrary ordering by node_id"""
+        node_ids = self.nodes.keys()
+        f_i = 0
+        for node_id in self.nodes.keys():
+            f_i += 1
+            self.fi_to_nodeid[f_i] = f_i
 
 
-large_dataset = False
-g_base = SccGraph()
-g = g_base.clone()
+
+large_dataset = True
+g = SccGraph()
+g.set_fi_to_default()
 if large_dataset:
-    g.read_graph_from_file('scc.txt', mode='edges')
+    g.read_graph_from_file('scc_redownloaded.txt', mode='edges', node_id_cap=10000)
 else:
-    g.read_graph_from_file('test_case_33200.txt', mode='edges')
+    g.read_graph_from_file('test_case_71000.txt', mode='edges')
 print 'Base Graph:'
 print 'len(g.nodes.keys)', len(g.nodes.keys())
 print 'max(g.nodes.keys)', max(g.nodes.keys())

@@ -59,7 +59,6 @@ class Graph(object):
         node_index = 0
         edge_index = 0
         self.edge_count = len(lines)
-        self.edges = [None] * self.edge_count
         print 'initializing graph'
         for line in lines:
             line = line.rstrip()
@@ -72,11 +71,14 @@ class Graph(object):
             elif mode == 'edges':
                 head = line_int[0]
                 tail = line_int[1]
-                self.edges[edge_index] = (head, tail)
-                if head > node_index:
+                self.edges.append((head, tail))
+                if not head in self.nodes:
                     node_index += 1
-                    self.nodes[node_index] = Node()
-                self.nodes[node_index].add_edge(tail)
+                    self.nodes[head] = Node()
+                if not tail in self.nodes:
+                    node_index += 1
+                    self.nodes[tail] = Node()
+                self.nodes[head].add_edge(tail)
             self.node_count = node_index
             edge_index += 1
             if edge_index % 100000 == 0:
@@ -220,23 +222,35 @@ class SccGraph(Graph):
             values[index] = 0
 
 
-g_base = SccGraph()
-g = g_base.clone()
-if False:
-    g.read_graph_from_file('scc.txt', mode='edges')
-else:
-    g.read_graph_from_file('test_case_medium.txt', mode='edges')
-# print 'Base Graph:'
-# g.print_graph()
-g.dfs_group()
-print 'after first round of group-dfs'
-# g.print_graph()
 
-g.prepare_for_second_scc_step()
-g.dfs_group()
-print 'after second round of group-dfs'
-# g.print_graph()
-g.print_scc_sizes(count=5)
+
+def main():
+    g = SccGraph()
+    if True:
+        g.read_graph_from_file('scc_redownloaded.txt', mode='edges')
+    else:
+        g.read_graph_from_file('test_case_33300.txt', mode='edges')
+    # print 'Base Graph:'
+    # g.print_graph()
+    g.dfs_group()
+    print 'after first round of group-dfs'
+    # g.print_graph()
+
+    g.prepare_for_second_scc_step()
+    g.dfs_group()
+    print 'after second round of group-dfs'
+    # g.print_graph()
+    g.print_scc_sizes(count=5)
+
+MiB = 2**20
+import sys
+import threading
+threading.stack_size(256*MiB-1)
+sys.setrecursionlimit(10**7)
+thread = threading.Thread(target=main)
+thread.start()
+
+# Latest result(correct): 434821,968,459,313,211
 
 """
 1 4
