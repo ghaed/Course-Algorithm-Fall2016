@@ -42,7 +42,6 @@ class Graph(object):
         self.directional = True
         self.node_count = 0
         self.edge_count = 0
-        self.t = 0
 
     def add_node(self, node_id, node_obj=None):
         """ Adds a new isolated node to graph.
@@ -141,12 +140,12 @@ class Graph(object):
 
 class SccGraph(Graph):
     """ Methods for computing strongly-connected components in directional
-     graphs are implemented here. Sub-class of Graph. This version is using an iterative [not recursive]
-     approach"""
+     graphs are implemented here. Sub-class of Graph"""
 
     def __init__(self):
         """ Constructor """
         super(SccGraph, self).__init__()
+        self.t = 0
         self.s = None
         self.treat_as_reversed = True
         self.fi_to_nodeid = {}
@@ -160,32 +159,23 @@ class SccGraph(Graph):
             new_graph.add_node(node_id, node)
         return new_graph
 
-    def dfs(self, node_id_start):
+    def dfs(self, node_id):
         # type: (object) -> object
-        """ Runs dfs on current graph. uses an iterative algorithm """
-        stack = [node_id_start]
-        node_list = []
-        while stack:        # Iterate on stack items until done
-            node_id = stack.pop()
-            node_list.append(node_id)
-            self.nodes[node_id].is_explored = True
-            if not self.treat_as_reversed:
-                edge_pool = self.nodes[node_id].edges
-            else:
-                edge_pool = self.nodes[node_id].edges_reverse
-            for edge in edge_pool:
-                if not self.nodes[edge].is_explored:
-                    stack.append(edge)
-
-        for _ in range(len(node_list)):
-            node_id = node_list.pop()
-            self.t += 1
-            f_i = self.t
-            self.nodes[node_id].f_i = f_i
-            self.nodes[node_id].leader = node_id_start
-            if self.treat_as_reversed:
-                self.fi_to_nodeid[f_i] = node_id
-
+        """ Runs dfs on current graph """
+        self.nodes[node_id].is_explored = True
+        self.nodes[node_id].leader = self.s
+        if not self.treat_as_reversed:
+            edge_pool = self.nodes[node_id].edges
+        else:
+            edge_pool = self.nodes[node_id].edges_reverse
+        for edge in edge_pool:
+            if not self.nodes[edge].is_explored:
+                self.dfs(edge)
+        self.t += 1
+        f_i = self.t
+        self.nodes[node_id].f_i = f_i
+        if self.treat_as_reversed:
+            self.fi_to_nodeid[f_i] = node_id
 
     def dfs_group(self):
         """ Runs dfs-loop on current graph"""
@@ -230,26 +220,22 @@ class SccGraph(Graph):
             values[index] = 0
 
 
-large_dataset = True
 g_base = SccGraph()
 g = g_base.clone()
-if large_dataset:
+if False:
     g.read_graph_from_file('scc.txt', mode='edges')
 else:
-    g.read_graph_from_file('test_case_small.txt', mode='edges')
-print 'Base Graph:'
-if not large_dataset:
-    g.print_graph()
+    g.read_graph_from_file('test_case_medium.txt', mode='edges')
+# print 'Base Graph:'
+# g.print_graph()
 g.dfs_group()
 print 'after first round of group-dfs'
-if not large_dataset:
-    g.print_graph()
+# g.print_graph()
 
 g.prepare_for_second_scc_step()
 g.dfs_group()
 print 'after second round of group-dfs'
-if not large_dataset:
-    g.print_graph()
+# g.print_graph()
 g.print_scc_sizes(count=5)
 
 """
