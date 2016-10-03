@@ -6,9 +6,9 @@ class Node:
 
     def __init__(self):
         """ Constructor to initialize an empty node"""
-        self.edges = []        # The list of node names connected to this node object
-        self.is_explored = False        # Flag to determine if it is already explored
-        self.lead = None                # Node_id of the lead node in an scc algorithm
+        self.edges = []  # The list of node names connected to this node object
+        self.is_explored = False  # Flag to determine if it is already explored
+        self.leader = None  # Node_id of the leader node in an scc algorithm
         self.f_i = 0
         self.edges_reverse = []
 
@@ -37,7 +37,7 @@ class Graph(object):
 
     def __init__(self):
         """ Constructor to initialize an empty graph. Must add nodes later """
-        self.nodes = {}         # Each node number will be its hash
+        self.nodes = {}  # Each node number will be its hash
         self.edges = []
         self.directional = True
         self.node_count = 0
@@ -59,7 +59,7 @@ class Graph(object):
         node_index = 0
         edge_index = 0
         self.edge_count = len(lines)
-        self.edges = [None]*self.edge_count
+        self.edges = [None] * self.edge_count
         print 'initializing vertices'
         for line in lines:
             line = line.rstrip()
@@ -94,8 +94,9 @@ class Graph(object):
         """ Prints a graph"""
         for node_id in self.nodes.keys():
             print node_id, ':', self.nodes[node_id].edges, \
+                ' f_i:', self.nodes[node_id].f_i, \
                 ' Explored:', self.nodes[node_id].is_explored, \
-                ' Lead:', self.nodes[node_id].lead, \
+                ' Leader:', self.nodes[node_id].leader, \
                 ' Reversed Edges: ', self.nodes[node_id].edges_reverse
 
     def is_edge(self, node_id_a, node_id_b):
@@ -131,7 +132,7 @@ class Graph(object):
     def get_edge_count(self):
         """Returns the number of edges"""
         edges = self.get_edges()
-        return len(edges)/2
+        return len(edges) / 2
 
     def get_node_count(self):
         """Returns the number of nodes"""
@@ -147,7 +148,9 @@ class SccGraph(Graph):
         super(SccGraph, self).__init__()
         self.t = 0
         self.s = None
-        self.treat_as_reversed = False
+        self.treat_as_reversed = True
+        self.fi_to_nodeid = {}
+        self.scc_sizes = {}     # Stores the sizes of scc's indexed by the leader node_id
 
     def clone(self):
         """ Clones a graph object"""
@@ -158,9 +161,10 @@ class SccGraph(Graph):
         return new_graph
 
     def dfs(self, node_id):
+        # type: (object) -> object
         """ Runs dfs on current graph """
         self.nodes[node_id].is_explored = True
-        self.nodes[node_id].lead = self.s
+        self.nodes[node_id].leader = self.s
         if not self.treat_as_reversed:
             edge_pool = self.nodes[node_id].edges
         else:
@@ -169,29 +173,69 @@ class SccGraph(Graph):
             if not self.nodes[edge].is_explored:
                 self.dfs(edge)
         self.t += 1
-        self.nodes[node_id].f_i = self.t
+        f_i = self.t
+        self.nodes[node_id].f_i = f_i
+        if self.treat_as_reversed:
+            self.fi_to_nodeid[f_i] = node_id
 
     def dfs_group(self):
         """ Runs dfs-loop on current graph"""
-        for node_id in range(self.node_count, 0, -1):
+        for f_i in range(self.node_count, 0, -1):
+            # If we are doing the first round of dfs_group on reversed graph to calculate times
+            if self.treat_as_reversed:
+                node_id = f_i
+            else:  # If we are doing the second round with the fresh re-ordered nodes
+                node_id = self.fi_to_nodeid[f_i]
             if not self.nodes[node_id].is_explored:
                 self.s = node_id
                 self.dfs(node_id)
+        if not self.treat_as_reversed:
+            self.compute_scc_sizes()
+
+    def prepare_for_second_scc_step(self):
+        """ Prepares for the second round of scc step"""
+        self.treat_as_reversed = False
+        self.t = 0
+        self.s = None
+        for node_id in range(1, self.node_count + 1):       # Mark everything as unexplored
+            self.nodes[node_id].is_explored = False
+
+    def compute_scc_sizes(self):
+        """ Updates self.scc_sizes[leader] by traversing through the graph."""
+        for node_id in range(1, self.node_count +1):
+            leader = self.nodes[node_id].leader
+            if leader in self.scc_sizes:
+                self.scc_sizes[leader] += 1
+            else:
+                self.scc_sizes[leader] = 1
+
+    def print_scc_sizes(self, count=2):
+        """ Prints count number of largest scc's with their leaders """
+        values = list(self.scc_sizes.values())
+        keys = list(self.scc_sizes.keys())
+        for rank in range(count):
+            max_val = max(values)
+            index = values.index(max_val)
+            max_key = keys[index]
+            print 'rank:', rank, '-> leader: ', max_key, ' size:', max_val
+            values[index] = 0
 
 
-g = SccGraph()
+g_base = SccGraph()
+g = g_base.clone()
 g.read_graph_from_file('test_case_small.txt', mode='edges')
 # g.read_graph_from_file('scc.txt', mode='edges')
 print 'Base Graph:'
 g.print_graph()
-g.treat_as_reversed = True
 g.dfs_group()
 print 'after first round of group-dfs'
 g.print_graph()
-g.treat_as_reversed = False
+
+g.prepare_for_second_scc_step()
 g.dfs_group()
 print 'after second round of group-dfs'
 g.print_graph()
+g.print_scc_sizes(count=3)
 
 """
 1 4
