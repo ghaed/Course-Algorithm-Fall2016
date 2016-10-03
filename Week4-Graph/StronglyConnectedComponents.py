@@ -172,12 +172,13 @@ class SccGraph(Graph):
     def dfs(self, node_id_start):
         # type: (object) -> object
         """ Runs dfs on current graph. uses an iterative algorithm """
+        self.nodes[node_id_start].is_explored = True
         stack = [node_id_start]
         node_list = []
         while stack:        # Iterate on stack items until done
             node_id = stack.pop()
             node_list.append(node_id)
-            self.nodes[node_id].is_explored = True
+            # self.nodes[node_id].is_explored = True    # THE BUG I CHASED FOR A DAY!
             if not self.treat_as_reversed:
                 edge_pool = self.nodes[node_id].edges
             else:
@@ -185,6 +186,7 @@ class SccGraph(Graph):
             for edge in edge_pool:
                 if not self.nodes[edge].is_explored:
                     stack.append(edge)
+                    self.nodes[edge].is_explored = True
 
         for _ in range(len(node_list)):
             node_id = node_list.pop()
@@ -198,7 +200,7 @@ class SccGraph(Graph):
     def dfs_group(self):
         """ Runs dfs-loop on current graph"""
         for f_i in range(self.node_count, 0, -1):
-            if f_i % 100000 == 0:
+            if f_i % 500 == 0:
                 if self.treat_as_reversed:
                     round = 1
                 else:
@@ -260,13 +262,12 @@ large_dataset = True
 g = SccGraph()
 g.set_fi_to_default()
 if large_dataset:
-    g.read_graph_from_file('scc_redownloaded.txt', mode='edges', node_id_cap=10000)
+    g.read_graph_from_file('scc_redownloaded.txt', mode='edges', node_id_cap=None)
 else:
-    g.read_graph_from_file('test_case_71000.txt', mode='edges')
+    g.read_graph_from_file('test_case_41110.txt', mode='edges')
 print 'Base Graph:'
 print 'len(g.nodes.keys)', len(g.nodes.keys())
 print 'max(g.nodes.keys)', max(g.nodes.keys())
-
 
 if not large_dataset:
     g.print_graph()
@@ -281,18 +282,3 @@ print 'after second round of group-dfs'
 if not large_dataset:
     g.print_graph()
 g.print_scc_sizes(count=5)
-
-"""
-1 4
-2 8
-3 6
-4 7
-5 2
-6 9
-7 1
-8 5
-8 6
-9 7
-9 3
-Answer: 3,3,3,0,0
-"""

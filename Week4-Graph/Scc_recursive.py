@@ -51,18 +51,23 @@ class Graph(object):
         else:
             self.nodes[node_id] = node_obj
 
-    def read_graph_from_file(self, file_name, mode='edges'):
+    def read_graph_from_file(self, file_name, mode='edges', node_id_cap=None):
         """ Reads a graph from a file. Each row starts with a node name followed by all of its target nodes
         For directional graph, assumes increasing order of indexes"""
         f = open(file_name)
         lines = f.readlines()
         node_index = 0
         edge_index = 0
+        line_index = 0
         self.edge_count = len(lines)
+        self.edges = []
         print 'initializing graph'
         for line in lines:
             line = line.rstrip()
             line_int = [int(k) for k in line.split()]
+            line_index += 1
+            if line_index % 100000 == 0:
+                print 'reading line', line_index, '/', len(lines), ' node_count:', node_index
             if mode == 'nodes':
                 node_id = line_int[0]
                 self.add_node(node_id)
@@ -71,20 +76,25 @@ class Graph(object):
             elif mode == 'edges':
                 head = line_int[0]
                 tail = line_int[1]
+                if node_id_cap and (head > node_id_cap or tail > node_id_cap):
+                    continue
                 self.edges.append((head, tail))
+                edge_index += 1
                 if not head in self.nodes:
-                    node_index += 1
                     self.nodes[head] = Node()
-                if not tail in self.nodes:
                     node_index += 1
+                if not tail in self.nodes:
                     self.nodes[tail] = Node()
+                    node_index += 1
                 self.nodes[head].add_edge(tail)
             self.node_count = node_index
-            edge_index += 1
-            if edge_index % 100000 == 0:
-                print 'reading line', edge_index, '/', len(lines)
+            self.edge_count = edge_index
+
         print 'updating reverse edges'
         self._update_reverse_edges()
+
+
+
 
     def _update_reverse_edges(self):
         """ Updates the reverse edges"""
@@ -226,20 +236,20 @@ class SccGraph(Graph):
 
 def main():
     g = SccGraph()
-    if True:
-        g.read_graph_from_file('scc_redownloaded.txt', mode='edges')
+    if False:
+        g.read_graph_from_file('scc_redownloaded.txt', mode='edges', node_id_cap=7)
     else:
-        g.read_graph_from_file('test_case_33300.txt', mode='edges')
-    # print 'Base Graph:'
-    # g.print_graph()
+        g.read_graph_from_file('test_case_41110.txt', mode='edges')
+    print 'Base Graph:'
+    g.print_graph()
     g.dfs_group()
     print 'after first round of group-dfs'
-    # g.print_graph()
+    g.print_graph()
 
     g.prepare_for_second_scc_step()
     g.dfs_group()
     print 'after second round of group-dfs'
-    # g.print_graph()
+    g.print_graph()
     g.print_scc_sizes(count=5)
 
 MiB = 2**20
@@ -249,20 +259,4 @@ threading.stack_size(256*MiB-1)
 sys.setrecursionlimit(10**7)
 thread = threading.Thread(target=main)
 thread.start()
-
 # Latest result(correct): 434821,968,459,313,211
-
-"""
-1 4
-2 8
-3 6
-4 7
-5 2
-6 9
-7 1
-8 5
-8 6
-9 7
-9 3
-Answer: 3,3,3,0,0
-"""
