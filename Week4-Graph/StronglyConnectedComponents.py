@@ -60,7 +60,7 @@ class Graph(object):
         edge_index = 0
         self.edge_count = len(lines)
         self.edges = [None] * self.edge_count
-        print 'initializing vertices'
+        print 'initializing graph'
         for line in lines:
             line = line.rstrip()
             line_int = [int(k) for k in line.split()]
@@ -86,7 +86,6 @@ class Graph(object):
 
     def _update_reverse_edges(self):
         """ Updates the reverse edges"""
-        print self.edges
         for (head, tail) in self.edges:
             self.nodes[tail].add_edge_reverse(head)
 
@@ -223,18 +222,20 @@ class SccGraph(Graph):
 
 g_base = SccGraph()
 g = g_base.clone()
-g.read_graph_from_file('test_case_small.txt', mode='edges')
-# g.read_graph_from_file('scc.txt', mode='edges')
-print 'Base Graph:'
-g.print_graph()
+if True:
+    g.read_graph_from_file('scc.txt', mode='edges')
+else:
+    g.read_graph_from_file('test_case_small.txt', mode='edges')
+# print 'Base Graph:'
+# g.print_graph()
 g.dfs_group()
 print 'after first round of group-dfs'
-g.print_graph()
+# g.print_graph()
 
 g.prepare_for_second_scc_step()
 g.dfs_group()
 print 'after second round of group-dfs'
-g.print_graph()
+# g.print_graph()
 g.print_scc_sizes(count=3)
 
 """
