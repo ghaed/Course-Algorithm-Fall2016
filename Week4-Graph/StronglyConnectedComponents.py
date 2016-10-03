@@ -75,8 +75,9 @@ class Graph(object):
                 tail = line_int[1]
                 self.edges[edge_index] = (head, tail)
                 if head > node_index:
-                    node_index += 1
-                    self.nodes[node_index] = Node()
+                    for node_id in range(node_index+1, head+1):
+                        self.nodes[node_id] = Node()
+                    node_index = head
                 self.nodes[node_index].add_edge(tail)
             self.node_count = node_index
             edge_index += 1
@@ -236,7 +237,7 @@ g = g_base.clone()
 if large_dataset:
     g.read_graph_from_file('scc.txt', mode='edges')
 else:
-    g.read_graph_from_file('test_case_small.txt', mode='edges')
+    g.read_graph_from_file('test_case_71000.txt', mode='edges')
 print 'Base Graph:'
 if not large_dataset:
     g.print_graph()
