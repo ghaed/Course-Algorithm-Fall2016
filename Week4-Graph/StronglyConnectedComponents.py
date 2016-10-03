@@ -236,7 +236,7 @@ g.prepare_for_second_scc_step()
 g.dfs_group()
 print 'after second round of group-dfs'
 # g.print_graph()
-g.print_scc_sizes(count=3)
+g.print_scc_sizes(count=5)
 
 """
 1 4
