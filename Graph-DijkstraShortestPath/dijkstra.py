@@ -130,8 +130,14 @@ class PathGraph(Graph):
             self.nodes[best_head].distance = best_distance
 
 g = PathGraph()
-g.read_graph_from_file('test_case_02344.txt')
+test_case = 'test_case_large.txt'
+g.read_graph_from_file(test_case)
 g.print_graph()
 g.dijkstra_naive(1)
-print 'after dijkstra'
+print 'After Dijkstra'
 g.print_graph()
+if 'large' in test_case:
+    result = ""
+    for node_id in [7,37,59,82,99,115,133,165,188,197]:
+        result += str(g.nodes[node_id].distance) + ','
+    print 'result: ', result
