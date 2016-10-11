@@ -2,7 +2,7 @@
 Repository storing my codes for the fun algorithms I have implemented
 
 
-## Divide and Conquer Algorithms
+## **Divide and Conquer Algorithms**
 ###FindSecond: 
 Finds the 2nd largest element in an array with only n+long(n)-1 comparisons
 ###InversionCount:
