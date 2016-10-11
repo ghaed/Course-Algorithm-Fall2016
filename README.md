@@ -10,7 +10,7 @@ Counts the number of inversions in an array
 ###QuickSort:
 Sorts an array using the n*log(n) in-place quick sort
 
-## Graph Algorithms
+## **Graph Algorithms**
 ###DijkstraShortestPath
 Implement's Dijkstra's shortest path algorithm. Both the naive O(m*n) version and the more efficient heap-based O(m*lon(n)) algorithms are implemented
 ###KargerMinimumCut
