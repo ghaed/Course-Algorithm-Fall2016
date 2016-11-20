@@ -18,3 +18,10 @@ Implements Karger's minimum-cut algorithm. The fast algorithm uses a randomized 
 ###StronglyConnectedComponents
 Uses a depth-first-search style algorithm to find the strongly-connected components of a graph. Both the recursive implementation and the stack-based iterative approach are coded up
 
+## **Greedy Algorithms**
+###Scheduling
+Implements an optimum scheduling algorithm using a greedy approach
+###PrimMinimumSpanningTree
+Calculates the minimum spanning tree of a graph using Prim's algorithm. The order of the algorithm is O(m*n). The heap-based O(n*log(m)) algorithm was not implemented
+###KruskarClustering
+Computes the optimum clustering of a given graph using Kruskar's algorithm
