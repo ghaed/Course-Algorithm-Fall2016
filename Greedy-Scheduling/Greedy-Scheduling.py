@@ -1,4 +1,4 @@
-attrgette
+from operator import attrgetter
 class Task(object):
     """ Stores a task"""
     def __init__(self, num, w, l):
@@ -6,6 +6,7 @@ class Task(object):
         self.w = w
         self.l = l
         self.score = 0
+        self.cost = 0
 
     def update_score(self, method='ratio'):
         if method == 'ratio':
@@ -19,6 +20,7 @@ class Schedule(object):
         self.size = 0
         self.tasks = []
         self.method = 'ratio'
+        self._total_cost = 0
 
     def read_from_file(self, file_name):
         """ Reads the weights and lengths from a file"""
@@ -36,18 +38,31 @@ class Schedule(object):
     def sort(self):
         """ Sorts the tasks based on score"""
         self.update_score()
-        self.tasks.sort(key=attrgetter('score','w'))
+        self.tasks.sort(key=attrgetter('score', 'w'), reverse=True)
+        t = 0
+        self._total_cost = 0
+        for task in self.tasks:
+            t += task.l
+            task.cost = task.w * t
+            self._total_cost += task.cost
+
+    @property
+    def total_cost(self):
+        return self._total_cost
 
 
     def to_string(self):
         """ Displays the tasks"""
-        print 'Task# Width Height Length Score'
+        print 'Task# Width Height Length Score Cost'
         for task in self.tasks:
-            print task.num, task.w, task.l, task.score
+            print task.num, task.w, task.l, task.score, task.cost
+        print '**** Total Cost = ', self._total_cost
+
 
 
 schedule = Schedule()
-schedule.read_from_file('test_case_61545_60213.txt')
+# schedule.read_from_file('test_case_61545_60213.txt')
+schedule.read_from_file('jobs.txt')
 schedule.method = 'ratio'
 schedule.sort()
-schedule.to_string()
+print schedule.total_cost
