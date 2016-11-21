@@ -1,6 +1,4 @@
-a= [1,2,3,1]
-b= set(a)
-print len(b)
-a = 0
-a-= 3-2
+a= set([1])
+b=set([2,2])
+a=a.union(b)
 print a

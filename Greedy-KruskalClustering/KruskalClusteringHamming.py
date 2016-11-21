@@ -42,6 +42,9 @@ class Graph(object):
         """ Constructor to initialize an empty graph. Must add nodes later """
         self.nodes = {}         # Each node number will be its hash
         self.edges = []
+        self.codes = []
+        self.table = []
+        self.num_bits = 0
 
     def add_node(self, node_id_new, node_obj=None):
         """ Adds a new isolated node to graph.
@@ -59,29 +62,31 @@ class Graph(object):
         line = lines[0].rstrip()
         line_strings = line.split()
         num_nodes = int(line_strings[0])
-        num_bits = int(line_strings[1])
+        self.num_bits = int(line_strings[1])
+        self.codes = [0]*num_nodes
+        node_id = 0
         for line in lines[1:]:
+            if node_id % 50000 == 0:
+                print 'Reading line # ', node_id, '/', num_nodes
             line = line.rstrip()
             line_strings = line.split()
-            node_id_a = int(line_strings[0])
-            node_id_b = int(line_strings[1])
-            length = int(line_strings[2])
-            self.edges.append(Edge(node_id_a, node_id_b, length=length))
-            if node_id_a not in self.nodes:
-                self.add_node(node_id_a)
-            if node_id_b not in self.nodes:
-                self.add_node(node_id_b)
-            self.add_edge(node_id_a, node_id_b, length)
-            self.add_edge(node_id_b, node_id_a, length)
+            code = 0
+            for bit_str in line_strings:
+                code <<= 1
+                if bit_str == '1':
+                    code |= 1
+            if code not in self.table:
+                self.table[code] = [node_id]
+            else:
+                self.table[code].append(node_id)
+            self.codes[node_id] = code
+            node_id += 1
 
     def print_graph(self):
         """ Prints a graph"""
-        print '*List of Nodes'
-        for node_id_new in self.nodes.keys():
-            print node_id_new, ':', self.nodes[node_id_new].edges
-        print '*List of edges:'
-        for edge in self.edges:
-            print 'edge: ', edge.head, '-', edge.tail, ', Len=', edge.length
+        print '*List of Codes'
+        for i in range(self.node_count):
+            print i, ':', self.codes[i]
 
     def is_edge(self, node_id_a, node_id_b):
         """ Checks if there is an edge between two node names"""
@@ -119,7 +124,7 @@ class Graph(object):
     @property
     def node_count(self):
         """Property: node count"""
-        return len(self.nodes.keys())
+        return len(self.codes)
 
 
 class PathGraph(Graph):
@@ -128,45 +133,51 @@ class PathGraph(Graph):
     def __init__(self):
         """ Constructor """
         super(PathGraph, self).__init__()
-        self.x = []         # Stores nodes swept so far
-        self.t = []         # Stores edges of the minimum spanning tree
-        self.total_cost = 0         # The overall cost
         self.clusters = UnionFind()
-        self.mst = []
+        self.table = {}
 
-    def clone(self):
-        """ Clones a graph object"""
-        cut_graph = PathGraph()
-        for node_id_new in self.nodes.keys():
-            node = self.nodes[node_id_new].clone()
-            cut_graph.add_node(node_id_new, node)
-        return cut_graph
-
-    def kruskal_unionfind_primitive(self, num_clusters=2):
-        """ Implements the naive version of Kruskal Minimum Spanning Tree Algorithm that is O(m*n) to do the
-        clustering"""
-        self.edges.sort(key=attrgetter('length'), reverse=False)    # Sort the edges by their length
-        for node_id in self.nodes:      # Fill the UnionFind object with N distinct Nodes
+    def kruskal_unionfind_hamming(self):
+        """ Implements Kraskal's algorithms on a large graph with implicit distances """
+        for node_id in range(self.node_count):      # Fill the UnionFind object with N distinct Nodes
             _ = self.clusters[node_id]
+        print 'Done filling the Union-Find data structure'
 
-        for edge in self.edges:     # Sweep through the sorted edges as dictated by Kruskal's algorithm
-            if self.clusters[edge.tail] != self.clusters[edge.head]:    # Check if roots(leaders) are different
-                if self.clusters.num_clusters == num_clusters:  # Terminate if reached target
-                    return edge.length      # Return The maximum distance between the remaining clusters and terminate
-                self.mst.append(edge)       # Update the minimum-spanning-tree. Not required for this assignment
-                self.clusters.union(edge.tail, edge.head)   # Merge the two clusters
+        # Process distance = 0 first; Merge all nodes with distance=0 using the Union-Find data structure
+        for node_id_a in range(self.node_count):
+            if node_id_a % 1000 == 0:
+                print 'processing node ', node_id_a, '/', self.node_count
+            code = self.codes[node_id_a]
+            node_id_b_list = []
+            for distance in range(3):
+                for code_neighbor in self.hamming_neighbors(code, num_bits=self.num_bits, distance=distance):
+                    if code_neighbor in self.table:
+                        node_id_b_list += self.table[code_neighbor]
+            for node_id_b in node_id_b_list:
+                if self.clusters[node_id_a] != self.clusters[node_id_b]:
+                    self.clusters.union(node_id_a, node_id_b)
 
     def print_graph(self):
         """ Overloaded function to also print the cost of minimum spanning tree"""
         super(PathGraph, self).print_graph()
-        print '* Clusters:'
+        print '*Cluseters: ', self.clusters.num_clusters
         print self.clusters.cluster_arrays
 
+    def hamming_neighbors(self, code, num_bits, distance, mask=0):
+        """ Returns all the neighbors of a num_bits-bit code with distance = distace"""
+        if distance == 0:
+            return [code]
+        result = set()
+        xor_val = 0x01
+        for _ in range(num_bits):
+            if xor_val & mask == 0:
+                result = result.union(self.hamming_neighbors(code ^ xor_val, num_bits, distance-1, mask= mask|xor_val))
+            xor_val <<= 1
+        return result
 
 g = PathGraph()
-# test_case = 'test_case_4_7.txt'
-test_case = 'test_case_large.txt'
+test_case = 'test_case_big.txt'
+# test_case = 'test_case_6.txt'
 g.read_graph_from_file(test_case)
-print 'max distance:', g.kruskal_unionfind_primitive(num_clusters=4)
-
-
+g.kruskal_unionfind_hamming()
+g.print_graph()
+# 6118
