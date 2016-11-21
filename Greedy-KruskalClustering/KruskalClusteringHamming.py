@@ -56,13 +56,16 @@ class Graph(object):
         The expected format in each line is Ns N1,len1 N2,Len2 ..."""
         f = open(file_name)
         lines = f.readlines()
+        line = lines[0].rstrip()
+        line_strings = line.split()
+        num_nodes = int(line_strings[0])
+        num_bits = int(line_strings[1])
         for line in lines[1:]:
             line = line.rstrip()
             line_strings = line.split()
             node_id_a = int(line_strings[0])
             node_id_b = int(line_strings[1])
             length = int(line_strings[2])
-            node_id_new = int(line_strings[0])
             self.edges.append(Edge(node_id_a, node_id_b, length=length))
             if node_id_a not in self.nodes:
                 self.add_node(node_id_a)
@@ -162,8 +165,8 @@ class PathGraph(Graph):
 
 g = PathGraph()
 # test_case = 'test_case_4_7.txt'
-test_case = 'test_case_small.txt'
+test_case = 'test_case_large.txt'
 g.read_graph_from_file(test_case)
 print 'max distance:', g.kruskal_unionfind_primitive(num_clusters=4)
-# 106
+
 
