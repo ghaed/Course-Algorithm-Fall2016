@@ -19,11 +19,15 @@ class Knapsack(object):
         self.capacity = int(line_strings[0])
         self.num_items = int(line_strings[1])
         for i in range(self.num_items + 1):
+            if i % 100 == 0:
+                print 'creaging 2D array item #', i, '/', self.num_items
             self._a.append([0]*(self.capacity + 1))
         self.v = [0]*(self.num_items + 1)
         self.w = [0]*(self.num_items + 1)
         i = 1
         for line in lines[1:]:
+            if i % 100 == 0:
+                print 'reading line ', i, '/', self.num_items
             line = line.rstrip()
             line_strings = line.split()
             self.v[i] = int(line_strings[0])
@@ -33,6 +37,8 @@ class Knapsack(object):
     def solve(self):
         """ Solves the Knapsap problem by filling the array self.a """
         for i in range(1, self.num_items + 1):
+            if i % 100 == 0:
+                print 'Processing line #', i, '/', self.num_items
             for x in range(self.capacity + 1):
                 option_not_selected = self._a[i-1][x]
                 if self.w[i] > x:
@@ -67,7 +73,7 @@ class Knapsack(object):
 k = Knapsack()
 # k.read_from_file('test_case_13.txt')
 # k.read_from_file('test_case_5513.txt')
-k.read_from_file('knapsack1.txt')
+k.read_from_file('knapsack_big.txt')
 # print k.status
 k.solve()
 # print k.status
