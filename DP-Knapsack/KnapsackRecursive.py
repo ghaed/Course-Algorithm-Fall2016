@@ -78,6 +78,9 @@ class KnapsackRecursive(object):
         return result
 
 
+import sys
+sys.setrecursionlimit(10000) # 10000 is an example, try with different value
+
 k = KnapsackRecursive()
 # k.read_from_file('test_case_13.txt')
 # k.read_from_file('test_case_5513.txt')
@@ -86,4 +89,5 @@ k.read_from_file('knapsack_big.txt')
 k.solve()
 # print k.status
 print 'solution value =', k.solution_value
-# solution = 2493893
+# solution_small = 2493893
+# solution_big = 4243395
