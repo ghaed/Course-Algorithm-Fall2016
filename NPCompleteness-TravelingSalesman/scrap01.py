@@ -1,1 +1,2 @@
-print 2**0.5
+a=float('inf')
+print min(a,2.2)

@@ -47,13 +47,6 @@ class Graph(object):
                 j >>= 1
         return result
 
-    @property
-    def a(self):
-        result = [[float("inf") for x in range(self.n)] for y in range(2**self.n)]
-        for i in range(2**self.n):
-            for j in range(self.n):
-                result[i][j] = self._a[i][j+1]
-        return result
 
     def tsp(self):
         for m in range(2, self.n + 1):
@@ -69,13 +62,17 @@ class Graph(object):
                     for k in s:
                         if k == j:
                             continue
-                        print 'updating 2D matricx: m=', m, 's=', s, 'j=', j, 'subset_index=', subset_index, 'k=', k, 'min_a=', min_a
+                        print 'updating 2D matricx: m=', m, 's=', s, 'j=', j, 'subset_index=', subset_index, 'k=', k, 'recur=', self._a[subset_index-2**(j-1)][k] + self.distance(k,j), 'min_a(before)=', min_a
                         min_a = min(min_a,  self._a[subset_index-2**(j-1)][k] + self.distance(k,j))
+                        print 'min_a(after)=', min_a
+
+
                     self._a[subset_index][j] = min_a
+                    print self.a_string
 
         tsp_result = float('inf')
         for j in range(2, self.n + 1):
-            tsp_result = min(tsp_result, self._a[2**self.n - 1][j], self.distance(j,1))
+            tsp_result = min(tsp_result, self._a[2**self.n - 1][j] + self.distance(j,1))
         return tsp_result
 
 
@@ -91,10 +88,26 @@ class Graph(object):
     def y(self):
         return self._y[1:]
 
+    @property
+    def a(self):
+        result = [[float("inf") for x in range(self.n)] for y in range(2 ** self.n)]
+        for i in range(2 ** self.n):
+            for j in range(self.n):
+                result[i][j] = self._a[i][j + 1]
+        return result
+
+    @property
+    def a_string(self):
+        """ Returns a in a printable string format"""
+        result = ""
+        for elem in self.a:
+            result += str(elem) + '\n'
+        return result
 
 g = Graph()
 g.read_graph_from_file('test_case_6.47.txt')
 print g.a
 print g.all_subsets
-print g.tsp()
+tsp_result= g.tsp()
+print 'TSP Result=', tsp_result
 print g.a
