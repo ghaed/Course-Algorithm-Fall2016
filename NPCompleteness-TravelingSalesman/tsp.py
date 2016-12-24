@@ -18,10 +18,11 @@ class Graph(object):
         lines = f.readlines()
         line = lines[0].rstrip()
         self.n = int(line)
-        # Construct the 3D array for TSP
+        # Construct the 2D array for TSP
+        print 'Constructing 2D array'
         self._a = [[float("inf") for x in range(self.n + 1)] for y in range(2**self.n)]
-        for i in range(0, 2**self.n):  # Distance to self is zero
-            self._a[i][1] = 0
+        print 'Constructing 2D array completed'
+        self._a[1][1] = 0
         self._x = [0.0]*(self.n+1)
         self._y = [0.0]*(self.n+1)
         i = 0       # node index
@@ -33,6 +34,7 @@ class Graph(object):
         # The i_s (index of s out of 2^n) when converted to binary tells us what elements are present
         # eg: 0'b101 means that nodes 1 and 3 are present whearas node 2 is not
         # Fill all_s
+        print 'Forming list of sub-arrays...'
         self.all_subsets = self.sub_sets(range(1,self.n+1))
 
     def sub_sets(self, input_set):
@@ -50,6 +52,7 @@ class Graph(object):
 
     def tsp(self):
         for m in range(2, self.n + 1):
+            print 'calculating TSP recurrance for m=', m
             subset_index = -1        # indexes the subset number in the self.all_subsets array. Will come handy later
             for s in self.all_subsets:
                 subset_index += 1
@@ -62,13 +65,13 @@ class Graph(object):
                     for k in s:
                         if k == j:
                             continue
-                        print 'updating 2D matricx: m=', m, 's=', s, 'j=', j, 'subset_index=', subset_index, 'k=', k, 'recur=', self._a[subset_index-2**(j-1)][k] + self.distance(k,j), 'min_a(before)=', min_a
+                        # print 'updating 2D matricx: m=', m, 's=', s, 'j=', j, 'subset_index=', subset_index, 'k=', k, 'recur=', self._a[subset_index-2**(j-1)][k] + self.distance(k,j), 'min_a(before)=', min_a
                         min_a = min(min_a,  self._a[subset_index-2**(j-1)][k] + self.distance(k,j))
-                        print 'min_a(after)=', min_a
+                        # print 'min_a(after)=', min_a
 
 
                     self._a[subset_index][j] = min_a
-                    print self.a_string
+                    # print self.a_string
 
         tsp_result = float('inf')
         for j in range(2, self.n + 1):
@@ -105,9 +108,8 @@ class Graph(object):
         return result
 
 g = Graph()
-g.read_graph_from_file('test_case_6.47.txt')
-print g.a
-print g.all_subsets
+# g.read_graph_from_file('test_case_6.47.txt')
+# g.read_graph_from_file('test_case_7.89.txt')
+g.read_graph_from_file('tsp.txt')
 tsp_result= g.tsp()
 print 'TSP Result=', tsp_result
-print g.a
