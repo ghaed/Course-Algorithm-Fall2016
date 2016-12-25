@@ -18,7 +18,8 @@ class Graph(object):
                                 # The values
         self._x_raw = []
         self._y_raw = []
-        self.skip_nodes = []   # List of skipped nodes
+        self.skip_nodes = []   # List of skipped nodes. There is a dependent property that stores the same values
+                                # minus 1 and is callsed self.double_nodes
 
     def read_graph_from_file(self, file_name, skip_nodes_list=[]):
         """ Fills the x and y coordinates by reading the given file. Also, initializes the array self._a used
@@ -137,10 +138,11 @@ class Graph(object):
         """
 
         # Build the base path
+        print 'calculated trimmed path=', self.path
         base_path = []
         for node in self.path:
             base_path.append(node)
-            if node in self.skip_nodes:
+            if node in self.double_nodes:
                 base_path.append(node + 1)
         print 'base_path=', base_path
 
@@ -224,6 +226,14 @@ class Graph(object):
     @property
     def nskip(self):
         return len(self.skip_nodes)
+
+    @property
+    def double_nodes(self):
+        """ Returns the double-nodes which are basically the nodes before skipped nodes"""
+        result = []
+        for node in self.skip_nodes:
+            result.append(node - 1)
+        return result
 
 g = Graph()
 # g.read_graph_from_file('test_case_6.47.txt')
