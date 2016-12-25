@@ -13,17 +13,17 @@ class Graph(object):
         self.all_subsets = []        # a list of all possible sub-sets of the array
         self.n = 0          # Number of vertices, i.e. nodes. Excludes skipped nodes
         self.path = []
-        self.skip_nodes = []    # Stores the number and coordinates of the skipped nodes
+        self.skip_nodes_dic = {}    # Stores the number and coordinates of the skipped nodes in {node:(x,y)} format
         self.node_dic = {}   # Maps the used self.n nodes to self.n+self.nskip nodes
 
-    def read_graph_from_file(self, file_name, skip_nodes=[]):
+    def read_graph_from_file(self, file_name, skip_nodes_list=[]):
         """ Fills the x and y coordinates by reading the given file. Also, initializes the array self._a used
         in the Dynamic-Programming implementation of the TSP problem. Also fills the s array"""
-        self.skip_nodes = skip_nodes
         f = open(file_name)
         lines = f.readlines()
         line = lines[0].rstrip()
-        self.n = int(line)-self.nskip
+        self.n = int(line)-len(skip_nodes_list)
+        print 'Ignoring the following nodes: ', skip_nodes_list
         # Construct the 2D array for TSP
         print 'Constructing 2D array'
         row_a = [1e9 for _ in range(self.n + 1)]
@@ -43,13 +43,13 @@ class Graph(object):
         i = 0       # node index, including skipped
         j = 0       # node index, excluding skipped
         for line in lines[1:]:
+            line_strings = line.split()
             i += 1
-            if i in skip_nodes:
-
+            if i in skip_nodes_list:
+                self.skip_nodes_dic[i] = (float(line_strings[0]), float(line_strings[1]))
                 continue
             j += 1
             self.node_dic[j] = i
-            line_strings = line.split()
             self._x[j] = float(line_strings[0])
             self._y[j] = float(line_strings[1])
         # The i_s (index of s out of 2^n) when converted to binary tells us what elements are present
@@ -167,12 +167,12 @@ class Graph(object):
 
     @property
     def nskip(self):
-        return len(self.skip_nodes)
+        return len(self.skip_nodes_dic.keys())
 
 g = Graph()
 # g.read_graph_from_file('test_case_6.47.txt')
 # g.read_graph_from_file('test_case_7.89.txt', skip_nodes=[4])
-g.read_graph_from_file('tsp.txt', skip_nodes=[4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+g.read_graph_from_file('tsp.txt', skip_nodes_list=[4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
 # g.read_graph_from_file('tsp_simplified01.txt')
 tsp_result = g.tsp()
 print 'TSP length=', tsp_result
