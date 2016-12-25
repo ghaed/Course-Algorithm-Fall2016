@@ -13,8 +13,11 @@ class Graph(object):
         self.all_subsets = []        # a list of all possible sub-sets of the array
         self.n = 0          # Number of vertices, i.e. nodes. Excludes skipped nodes
         self.path = []
-        self.skip_nodes_dic = {}    # Stores the number and coordinates of the skipped nodes in {node:(x,y)} format
+        self.skip_nodes_dic = {}    # Stores the coordinates of the skipped nodes in {double_node_id:(x,y)} format
+                                    # Basically, insert a node with node_id = double_node_id+1 with coordinates
+                                    # (x,y) after double_node in the path
         self.node_dic = {}   # Maps the used self.n nodes to self.n+self.nskip nodes
+        # self.doube_nodes =[]    # List of double-nodes, i.e nodes for which the next element is merged with them
 
     def read_graph_from_file(self, file_name, skip_nodes_list=[]):
         """ Fills the x and y coordinates by reading the given file. Also, initializes the array self._a used
@@ -46,7 +49,10 @@ class Graph(object):
             line_strings = line.split()
             i += 1
             if i in skip_nodes_list:
-                self.skip_nodes_dic[i] = (float(line_strings[0]), float(line_strings[1]))
+                # store the information of the skipped node.
+                # j denotes the index (out of self.n) of the node i was merged with
+                self.skip_nodes_dic[i-1] = (float(line_strings[0]), float(line_strings[1])) # indexed by double-node's original index
+                self.doube_nodes.append(i-1)
                 continue
             j += 1
             self.node_dic[j] = i
@@ -120,6 +126,25 @@ class Graph(object):
 
 
         return min_len
+
+    def amend_skipped_nodes(self):
+        """ Amends the skipped nodes by finding the shortes possible paths. The assumption is that self.node_dic[]
+        """
+        paths = []
+        base_path = []
+        x = []
+        y = []
+        for node in self.path:
+            base_path.append(node)
+            self.x.append()
+            if node in self.skip_nodes_dic.keys():
+                base_path.append(node + 1)
+
+
+
+        for i in range(2**self.nskip):
+            path=
+
 
     def distance(self, i, j):
         """ Calculates the distance between two points indexed by i and j"""
