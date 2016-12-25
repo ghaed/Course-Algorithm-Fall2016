@@ -13,15 +13,17 @@ class Graph(object):
         self.all_subsets = []        # a list of all possible sub-sets of the array
         self.n = 0          # Number of vertices, i.e. nodes. Excludes skipped nodes
         self.path = []
-        self.skip_nodes_dic = {}    # Stores the coordinates of the skipped nodes in {double_node_id:(x,y)} format
-                                    # Basically, insert a node with node_id = double_node_id+1 with coordinates
-                                    # (x,y) after double_node in the path
         self.node_dic = {}   # Maps the used self.n nodes to self.n+self.nskip nodes
         # self.doube_nodes =[]    # List of double-nodes, i.e nodes for which the next element is merged with them
+                                # The values
+        self._x_raw = []
+        self._y_raw = []
+        self.skip_nodes = []   # List of skipped nodes
 
     def read_graph_from_file(self, file_name, skip_nodes_list=[]):
         """ Fills the x and y coordinates by reading the given file. Also, initializes the array self._a used
         in the Dynamic-Programming implementation of the TSP problem. Also fills the s array"""
+        self.skip_nodes = skip_nodes_list[:]
         f = open(file_name)
         lines = f.readlines()
         line = lines[0].rstrip()
@@ -43,16 +45,19 @@ class Graph(object):
         self._a[1][1] = 0
         self._x = [0.0]*(self.n+1)
         self._y = [0.0]*(self.n+1)
+        self._x_raw = [0.0]*(self.n + len(skip_nodes_list) + 1)
+        self._y_raw = [0.0]*(self.n + len(skip_nodes_list) + 1)
         i = 0       # node index, including skipped
         j = 0       # node index, excluding skipped
         for line in lines[1:]:
             line_strings = line.split()
             i += 1
+            self._x_raw[j] = float(line_strings[0])
+            self._y_raw[j] = float(line_strings[1])
             if i in skip_nodes_list:
                 # store the information of the skipped node.
                 # j denotes the index (out of self.n) of the node i was merged with
-                self.skip_nodes_dic[i-1] = (float(line_strings[0]), float(line_strings[1])) # indexed by double-node's original index
-                self.doube_nodes.append(i-1)
+                # self.doube_nodes.append(i-1)
                 continue
             j += 1
             self.node_dic[j] = i
@@ -123,28 +128,54 @@ class Graph(object):
         for _ in range(self.n - 1):
             (subset_index, j) = self._priors[subset_index][j]
             self.path.append(self.node_dic[j])
-
-
+        # Amend the skipped nodes to the path
+        self.amend_skipped_nodes()
         return min_len
 
     def amend_skipped_nodes(self):
         """ Amends the skipped nodes by finding the shortes possible paths. The assumption is that self.node_dic[]
         """
-        paths = []
+
+        # Build the base path
         base_path = []
-        x = []
-        y = []
         for node in self.path:
             base_path.append(node)
-            self.x.append()
-            if node in self.skip_nodes_dic.keys():
+            if node in self.skip_nodes:
                 base_path.append(node + 1)
+        print 'base_path=', base_path
 
-
-
+        # Build an array containing all permutations of paths
+        paths = []
         for i in range(2**self.nskip):
-            path=
+            cur_path = self.permutate_path(base_path, i)
+            paths.append(cur_path)
 
+        # Pick the best path among the 2**self.nskip paths
+        min_len = float('inf')
+        for cur_path in paths:
+            candidate = self.calc_path_length(cur_path)
+            if candidate < min_len:
+                self.path = cur_path[:]
+
+    def calc_path_length(self, cur_path):
+        """ alculates the length of a given path"""
+        cur_len = 0
+        for i in range(len(cur_path)-1):
+            cur_len += self.distance(cur_path[i], cur_path[i+1])
+        cur_len += self.distance(cur_path[-1], cur_path[0])
+        return len
+
+
+    def permutate_path(self, base_path, permutation):
+        """ Takes a self.nskip-bit permutation form 0 to 2**self.nskip-1 and permutates it based on permutation given"""
+        mask = permutation
+        j = 1
+        for i in range(self.nskip):
+            if mask & 0x01:
+                skip_node = self.skip_nodes[i]
+                j = base_path.index(skip_node)
+                base_path[j], base_path[j-1] = base_path[j-1], base_path[j]
+            mask >>= 1
 
     def distance(self, i, j):
         """ Calculates the distance between two points indexed by i and j"""
@@ -192,12 +223,12 @@ class Graph(object):
 
     @property
     def nskip(self):
-        return len(self.skip_nodes_dic.keys())
+        return len(self.skip_nodes)
 
 g = Graph()
 # g.read_graph_from_file('test_case_6.47.txt')
 # g.read_graph_from_file('test_case_7.89.txt', skip_nodes=[4])
-g.read_graph_from_file('tsp.txt', skip_nodes_list=[4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+g.read_graph_from_file('tsp.txt', skip_nodes_list=[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
 # g.read_graph_from_file('tsp_simplified01.txt')
 tsp_result = g.tsp()
 print 'TSP length=', tsp_result
