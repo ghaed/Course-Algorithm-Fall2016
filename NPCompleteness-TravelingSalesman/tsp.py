@@ -7,11 +7,12 @@ class Graph(object):
     def __init__(self):
         """ Constructor to initialize an empty matrix representation of the graph. """
         self._a = []        # Dyamic programming 2D matrix
-        self._prior = []        # Dyamic programming 2D matrix, pointing to one-before-last index k
+        self._priors = []        # Dyamic programming 2D matrix, pointing to one-before-last index k
         self._x = []        # x coordinates
         self._y = []        # y coordinates
         self.all_subsets = []        # a list of all possible sub-sets of the array
         self.n = 0          # Number of vertices, i.e. nodes
+        self.path = []
 
     def read_graph_from_file(self, file_name):
         """ Fills the x and y coordinates by reading the given file. Also, initializes the array self._a used
@@ -30,7 +31,7 @@ class Graph(object):
                 progress += 12.5
                 print 'Construction progress', progress, '%'
             self._a.append(row_a[:])
-            self._prior.append(row_prior[:])
+            self._priors.append(row_prior[:])
         # self._a = [[float("inf") for x in range(self.n + 1)] for y in range(2**self.n)]
         print 'Constructing 2D array completed'
         self._a[1][1] = 0
@@ -72,22 +73,44 @@ class Graph(object):
                 for j in s:     # For reach sub-set s, look at each possible last path ending-point
                     if j == 1:
                         continue
-                    min_a = float('inf')
+                    min_len = float('inf')
+                    prior = (0, 0)
                     for k in s:     # For each j, look at all possible one-before-last nodes, k
                         if k == j:
                             continue
                         # print 'updating 2D matricx: m=', m, 's=', s, 'j=', j, 'subset_index=', subset_index,
                         # 'k=', k, 'recur=', self._a[subset_index-2**(j-1)][k] + self.distance(k,j),
                         # 'min_a(before)=', min_a
-                        min_a = min(min_a,  self._a[subset_index-2**(j-1)][k] + self.distance(k, j))
+                        candidate = self._a[subset_index-2**(j-1)][k] + self.distance(k, j)
+                        if candidate < min_len:
+                            min_len = candidate
+                            prior = (subset_index-2**(j-1), k)  # Book-keeping to keep track of one-before-last node
+
                         # print 'min_a(after)=', min_a
-                    self._a[subset_index][j] = min_a
+                    self._a[subset_index][j] = min_len
+                    self._priors[subset_index][j] = prior
                     # print self.a_string
 
-        result = float('inf')
+        # Find the best-of-n last-point for the TSP
+        min_len = float('inf')
+        last_j = float('inf')
         for j in range(2, self.n + 1):
-            result = min(result, self._a[2**self.n - 1][j] + self.distance(j, 1))
-        return result
+            candidate = self._a[2**self.n - 1][j] + self.distance(j, 1)
+            if candidate < min_len:
+                min_len = candidate
+                last_j = j
+            # result = min(result, self._a[2**self.n - 1][j] + self.distance(j, 1))
+
+        # Back-calculate the path of the TSP
+        self.path = [last_j]
+        subset_index = 2**self.n - 1
+        j = last_j
+        for _ in range(self.n - 1):
+            (subset_index, j) = self._priors[subset_index][j]
+            self.path.append(j)
+
+
+        return min_len
 
     def distance(self, i, j):
         """ Calculates the distance between two points indexed by i and j"""
@@ -110,6 +133,14 @@ class Graph(object):
         return result
 
     @property
+    def priors(self):
+        result = [[100 for _ in range(self.n)] for _ in range(2 ** self.n)]
+        for i in range(2 ** self.n):
+            for j in range(self.n):
+                result[i][j] = self._priors[i][j + 1]
+        return result
+
+    @property
     def a_string(self):
         """ Returns a in a printable string format"""
         result = ""
@@ -117,10 +148,21 @@ class Graph(object):
             result += str(elem) + '\n'
         return result
 
+    @property
+    def priors_string(self):
+        """ Returns a in a printable string format"""
+        result = ""
+        for elem in self.priors:
+            result += str(elem) + '\n'
+        return result
+
 g = Graph()
-g.read_graph_from_file('test_case_6.47.txt')
-# g.read_graph_from_file('test_case_7.89.txt')
+# g.read_graph_from_file('test_case_6.47.txt')
+g.read_graph_from_file('test_case_7.89.txt')
 # g.read_graph_from_file('tsp.txt')
 # g.read_graph_from_file('tsp_simplified01.txt')
 tsp_result = g.tsp()
-print 'TSP Result=', tsp_result
+print 'TSP length=', tsp_result
+print 'prior: \n', g.priors_string
+print 'a: \n', g.a_string
+print 'TSP path: ', g.path
