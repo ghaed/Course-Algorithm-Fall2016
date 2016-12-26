@@ -245,7 +245,7 @@ class Graph(object):
 
 g = Graph()
 # g.read_graph_from_file('test_case_6.47.txt')
-# g.read_graph_from_file('test_case_7.89.txt', skip_nodes=[4])
+# g.read_graph_from_file('test_case_7.89.txt', skip_nodes_list=[])
 g.read_graph_from_file('tsp.txt', skip_nodes_list=[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
 # g.read_graph_from_file('tsp_simplified01.txt')
 g.tsp()
