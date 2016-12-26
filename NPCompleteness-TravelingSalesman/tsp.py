@@ -20,6 +20,7 @@ class Graph(object):
         self._y_raw = []
         self.skip_nodes = []   # List of skipped nodes. There is a dependent property that stores the same values
                                 # minus 1 and is callsed self.double_nodes
+        self.length = 0.0
 
     def read_graph_from_file(self, file_name, skip_nodes_list=[]):
         """ Fills the x and y coordinates by reading the given file. Also, initializes the array self._a used
@@ -129,14 +130,12 @@ class Graph(object):
         for _ in range(self.n - 1):
             (subset_index, j) = self._priors[subset_index][j]
             self.path.append(self.node_dic[j])
-        # Amend the skipped nodes to the path
+        # Amend the skipped nodes to the path by looking at all possible permutations
         self.amend_skipped_nodes()
-        return min_len
 
     def amend_skipped_nodes(self):
         """ Amends the skipped nodes by finding the shortes possible paths. The assumption is that self.node_dic[]
         """
-
         # Build the base path
         print 'calculated trimmed path=', self.path
         base_path = []
@@ -144,7 +143,6 @@ class Graph(object):
             base_path.append(node)
             if node in self.double_nodes:
                 base_path.append(node + 1)
-        print 'base_path=', base_path
 
         # Build an array containing all permutations of paths
         paths = []
@@ -153,35 +151,45 @@ class Graph(object):
             paths.append(cur_path)
 
         # Pick the best path among the 2**self.nskip paths
-        min_len = float('inf')
+        print 'last path:', paths[0]
+        self.length = float('inf')
         for cur_path in paths:
             candidate = self.calc_path_length(cur_path)
-            if candidate < min_len:
+            if candidate < self.length:
                 self.path = cur_path[:]
+                self.length = candidate
 
     def calc_path_length(self, cur_path):
-        """ alculates the length of a given path"""
+        """ calculates the length of a given path"""
         cur_len = 0
         for i in range(len(cur_path)-1):
-            cur_len += self.distance(cur_path[i], cur_path[i+1])
-        cur_len += self.distance(cur_path[-1], cur_path[0])
-        return len
+            cur_len += self.distance(cur_path[i], cur_path[i+1], mode='untrimmed')
+        cur_len += self.distance(cur_path[-1], cur_path[0], mode='untrimmed')
+        return cur_len
 
 
     def permutate_path(self, base_path, permutation):
         """ Takes a self.nskip-bit permutation form 0 to 2**self.nskip-1 and permutates it based on permutation given"""
         mask = permutation
+        cur_path = base_path[:]
         j = 1
         for i in range(self.nskip):
             if mask & 0x01:
                 skip_node = self.skip_nodes[i]
-                j = base_path.index(skip_node)
-                base_path[j], base_path[j-1] = base_path[j-1], base_path[j]
+                j = cur_path.index(skip_node)
+                cur_path[j], cur_path[j-1] = cur_path[j-1], cur_path[j]
             mask >>= 1
+        return cur_path
 
-    def distance(self, i, j):
-        """ Calculates the distance between two points indexed by i and j"""
-        return ((self._x[i] - self._x[j])**2 + (self._y[i] - self._y[j])**2)**0.5
+    def distance(self, i, j, mode='trimmed'):
+        """ Calculates the distance between two points indexed by i and j
+        mode = trimmed: used within the DP algorithm on the trimmed graph
+        mode = untrimmed: used outside the DP algorithhm on the original raw
+        """
+        if mode == 'trimmed':
+            return ((self._x[i] - self._x[j])**2 + (self._y[i] - self._y[j])**2)**0.5
+        else:
+            return ((self._x_raw[i] - self._x_raw[j])**2 + (self._y_raw[i] - self._y_raw[j])**2)**0.5
 
     @property
     def x(self):
@@ -240,8 +248,6 @@ g = Graph()
 # g.read_graph_from_file('test_case_7.89.txt', skip_nodes=[4])
 g.read_graph_from_file('tsp.txt', skip_nodes_list=[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
 # g.read_graph_from_file('tsp_simplified01.txt')
-tsp_result = g.tsp()
-print 'TSP length=', tsp_result
-print 'prior: \n', g.priors_string
-print 'a: \n', g.a_string
+g.tsp()
 print 'TSP path: ', g.path
+print 'TSP length=', g.length
