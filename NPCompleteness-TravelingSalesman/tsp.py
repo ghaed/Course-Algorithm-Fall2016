@@ -246,8 +246,15 @@ class Graph(object):
 g = Graph()
 # g.read_graph_from_file('test_case_6.47.txt')
 # g.read_graph_from_file('test_case_7.89.txt', skip_nodes_list=[])
-g.read_graph_from_file('tsp.txt', skip_nodes_list=[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
+# g.read_graph_from_file('tsp.txt', skip_nodes_list=[4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
+g.read_graph_from_file('tsp.txt', skip_nodes_list=[2, 11, 25])
 # g.read_graph_from_file('tsp_simplified01.txt')
 g.tsp()
 print 'TSP path: ', g.path
 print 'TSP length=', g.length
+'''
+calculated trimmed path= [4, 8, 4, 3, 7, 9, 13, 14, 16, 24, 20, 17, 21, 23, 22, 18, 19, 15, 12, 10, 6, 1]
+last path: [4, 8, 4, 3, 7, 9, 13, 14, 16, 24, 25, 20, 17, 21, 23, 22, 18, 19, 15, 12, 10, 11, 6, 1, 2]
+TSP path:  [4, 8, 4, 3, 7, 9, 13, 14, 16, 24, 25, 20, 17, 21, 23, 22, 18, 19, 15, 12, 11, 10, 6, 1, 2]
+TSP length= 155692.588086
+'''
